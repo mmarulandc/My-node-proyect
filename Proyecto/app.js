@@ -2,14 +2,24 @@ var express = require("express");
 var app = express();
 var bodyParser = require("body-parser");
 var User = require("./models/user").User;
+var session = require("express-session");
+var routerApp = require("./routes");
+var sessionMiddleware  = require("./middlewares/session");
 
 app.set("view engine", "jade");
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(session({
+    secret: "holita",
+    resave: false,
+    saveUninitialized: false
+
+}));
 
 app.get("/", function(req,res){
-   res.render("index");
+    console.log(req.session.user_id);
+    res.render("index");
 });
 
 app.get("/login", function(req,res){
@@ -36,14 +46,17 @@ app.post("/users", function(req,res){
 });
 
 app.post("/sessions",function(req,res){
-    User.findOne({email:req.body.email, password:req.body.pass},function(err,doc){
+    User.findOne({email:req.body.email, password:req.body.pass},function(err,user){
         if(err){ 
             console.log(String(err));
         }
-        console.log(doc);
-        res.send("hola mundo");
+    req.session.user_id = user._id;
+    res.send("hola mundo");    
     
     });
 });
+
+app.use("/app", sessionMiddleware);
+app.use("/app", routerApp);
 app.listen(8080);
 
